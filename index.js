@@ -30,7 +30,11 @@ async function runLoop() {
         .select()
         .single()
 
-      if (error) { console.error('[crash] Error creando ronda:', error.message); await sleep(3000); continue; }
+      if (error) {
+        console.error('[crash] Error creando ronda:', error.message)
+        await sleep(3000)
+        continue
+      }
 
       console.log('[crash] Ronda #' + round.id + ' — crash en ' + crashAt.toFixed(2) + 'x')
 
@@ -53,15 +57,20 @@ async function runLoop() {
         .update({ status: 'crashed' })
         .eq('id', round.id)
 
-      // 7. Resolver apuestas sin cashout como perdidas
+      console.log('[crash] Ronda #' + round.id + ' crasheó a ' + crashAt.toFixed(2) + 'x')
+
+      // 7. Esperar 2 segundos para que cashouts en vuelo lleguen primero
+      await sleep(2000)
+
+      // 8. Resolver apuestas sin cashout como perdidas
+      // Solo afecta las que tienen profit null (no fueron cobradas)
       await sb.from('crash_bets')
         .update({ profit: 0 })
         .eq('round_id', round.id)
         .is('cashout_at', null)
+        .is('profit', null)
 
-      console.log('[crash] Ronda #' + round.id + ' crasheó a ' + crashAt.toFixed(2) + 'x')
-
-      // 8. Pausa entre rondas
+      // 9. Pausa entre rondas
       await sleep(5000)
 
     } catch(e) {
